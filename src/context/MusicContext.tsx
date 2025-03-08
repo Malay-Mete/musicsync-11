@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface Song {
@@ -18,6 +19,7 @@ interface MusicContextType {
   searchResults: Song[];
   searchQuery: string;
   isSearching: boolean;
+  currentTime: number;
   setCurrentSong: (song: Song | null) => void;
   playSong: (song: Song) => void;
   pauseSong: () => void;
@@ -33,6 +35,7 @@ interface MusicContextType {
   setIsSearching: (isSearching: boolean) => void;
   nextSong: () => void;
   prevSong: () => void;
+  setCurrentTime: (time: number) => void;
 }
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
@@ -46,6 +49,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [searchResults, setSearchResults] = useState<Song[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
 
   // Load favorites from localStorage on initialization
   useEffect(() => {
@@ -57,12 +61,27 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.error('Failed to parse favorites from localStorage', error);
       }
     }
+    
+    // Load volume from localStorage
+    const savedVolume = localStorage.getItem('music-volume');
+    if (savedVolume) {
+      try {
+        setVolume(JSON.parse(savedVolume));
+      } catch (error) {
+        console.error('Failed to parse volume from localStorage', error);
+      }
+    }
   }, []);
 
   // Save favorites to localStorage when changed
   useEffect(() => {
     localStorage.setItem('music-favorites', JSON.stringify(favorites));
   }, [favorites]);
+  
+  // Save volume to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('music-volume', JSON.stringify(volume));
+  }, [volume]);
 
   const playSong = (song: Song) => {
     setCurrentSong(song);
@@ -105,6 +124,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setCurrentSong(nextSong);
       setQueue(queue.slice(1));
       setIsPlaying(true);
+      setCurrentTime(0);
     }
   };
 
@@ -125,6 +145,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         searchResults,
         searchQuery,
         isSearching,
+        currentTime,
         setCurrentSong,
         playSong,
         pauseSong,
@@ -140,6 +161,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsSearching,
         nextSong,
         prevSong,
+        setCurrentTime,
       }}
     >
       {children}
