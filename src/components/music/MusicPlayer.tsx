@@ -87,15 +87,16 @@ const MusicPlayer = () => {
   // Load song when current song changes
   useEffect(() => {
     if (currentSong && playerRef.current && playerReady) {
-      playerRef.current.loadVideoById({
-        videoId: currentSong.id,
-        startSeconds: contextCurrentTime > 0 ? contextCurrentTime : 0
-      });
-      
-      if (isPlaying) {
-        playerRef.current.playVideo();
-      } else {
-        playerRef.current.pauseVideo();
+      try {
+        playerRef.current.loadVideoById(currentSong.id, contextCurrentTime > 0 ? contextCurrentTime : 0);
+        
+        if (isPlaying) {
+          playerRef.current.playVideo();
+        } else {
+          playerRef.current.pauseVideo();
+        }
+      } catch (error) {
+        console.error("Error loading video:", error);
       }
     }
   }, [currentSong, playerReady]);
@@ -150,15 +151,16 @@ const MusicPlayer = () => {
             
             // If there's a current song, load it
             if (currentSong) {
-              event.target.loadVideoById({
-                videoId: currentSong.id,
-                startSeconds: contextCurrentTime > 0 ? contextCurrentTime : 0
-              });
-              
-              if (isPlaying) {
-                event.target.playVideo();
-              } else {
-                event.target.pauseVideo();
+              try {
+                event.target.loadVideoById(currentSong.id, contextCurrentTime > 0 ? contextCurrentTime : 0);
+                
+                if (isPlaying) {
+                  event.target.playVideo();
+                } else {
+                  event.target.pauseVideo();
+                }
+              } catch (error) {
+                console.error("Error initializing with video:", error);
               }
             }
           },
@@ -169,6 +171,10 @@ const MusicPlayer = () => {
           },
           onError: (event) => {
             console.error("YouTube player error:", event);
+            // Try to handle the error by moving to the next song
+            if (currentSong && queue.length > 0) {
+              nextSong();
+            }
           }
         },
       });
@@ -223,13 +229,21 @@ const MusicPlayer = () => {
     }
   };
   
+  const handleNextSong = () => {
+    nextSong();
+  };
+  
+  const handlePrevSong = () => {
+    prevSong();
+  };
+  
   if (!currentSong) {
     return null;
   }
   
   return (
     <div className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out
-    ${expanded ? 'h-80' : 'h-20'} bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 shadow-lg`}>
+    ${expanded ? 'h-96 sm:h-80' : 'h-20'} bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 shadow-lg`}>
       {/* Hidden YouTube iframe */}
       <div className="hidden">
         <iframe 
@@ -242,9 +256,9 @@ const MusicPlayer = () => {
       
       {/* Expanded player content - visible when expanded */}
       {expanded && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
-          <div className="flex w-full max-w-4xl">
-            <div className="flex-shrink-0 w-60 h-60 rounded-lg overflow-hidden shadow-md">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row w-full max-w-4xl">
+            <div className="flex-shrink-0 mx-auto sm:mx-0 w-40 h-40 sm:w-60 sm:h-60 rounded-lg overflow-hidden shadow-md mb-4 sm:mb-0">
               <img 
                 src={currentSong.thumbnail} 
                 alt={currentSong.title} 
@@ -252,9 +266,9 @@ const MusicPlayer = () => {
               />
             </div>
             
-            <div className="flex-1 ml-6 flex flex-col">
+            <div className="flex-1 sm:ml-6 flex flex-col">
               <div className="flex justify-between items-center">
-                <div>
+                <div className="max-w-[80%]">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 truncate">
                     {currentSong.title}
                   </h2>
@@ -265,7 +279,7 @@ const MusicPlayer = () => {
                 <ThemeToggle />
               </div>
               
-              <div className="mt-6 flex-1 flex flex-col justify-end">
+              <div className="mt-4 sm:mt-6 flex-1 flex flex-col justify-end">
                 <div className="flex items-center space-x-4 mb-4">
                   <span className="text-xs text-gray-500 dark:text-gray-400 w-10 text-right">
                     {formatTime(currentTime)}
@@ -285,7 +299,7 @@ const MusicPlayer = () => {
                   </span>
                 </div>
                 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap sm:flex-nowrap gap-2">
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={toggleMute}
@@ -299,7 +313,7 @@ const MusicPlayer = () => {
                       )}
                     </button>
                     
-                    <div className="w-24">
+                    <div className="w-16 sm:w-24">
                       <Slider
                         value={[volume]}
                         min={0}
@@ -311,9 +325,9 @@ const MusicPlayer = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-4">
+                  <div className="flex-1 flex items-center justify-center space-x-4">
                     <button
-                      onClick={prevSong}
+                      onClick={handlePrevSong}
                       className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       aria-label="Previous song"
                     >
@@ -333,7 +347,7 @@ const MusicPlayer = () => {
                     </button>
                     
                     <button
-                      onClick={nextSong}
+                      onClick={handleNextSong}
                       className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       aria-label="Next song"
                       disabled={queue.length === 0}
@@ -372,7 +386,7 @@ const MusicPlayer = () => {
       {/* Collapsed player controls - always visible */}
       <div className={`h-20 px-4 flex items-center ${expanded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className="w-full max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center">
+          <div className="flex items-center max-w-[40%] sm:max-w-[60%]">
             <div className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700 mr-3">
               <img 
                 src={currentSong.thumbnail} 
@@ -393,7 +407,7 @@ const MusicPlayer = () => {
           
           <div className="flex items-center justify-center space-x-3">
             <button
-              onClick={prevSong}
+              onClick={handlePrevSong}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               aria-label="Previous song"
             >
@@ -413,7 +427,7 @@ const MusicPlayer = () => {
             </button>
             
             <button
-              onClick={nextSong}
+              onClick={handleNextSong}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               aria-label="Next song"
               disabled={queue.length === 0}
@@ -422,8 +436,8 @@ const MusicPlayer = () => {
             </button>
           </div>
           
-          <div className="flex items-center space-x-3">
-            <div className="hidden md:flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="hidden sm:flex items-center space-x-3">
               <button
                 onClick={handleToggleFavorite}
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -435,7 +449,7 @@ const MusicPlayer = () => {
                 />
               </button>
               
-              <div className="flex items-center space-x-2">
+              <div className="hidden md:flex items-center space-x-2">
                 <button
                   onClick={toggleMute}
                   className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

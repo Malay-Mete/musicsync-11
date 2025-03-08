@@ -11,7 +11,14 @@ import Search from "./pages/Search";
 import Favorites from "./pages/Favorites";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -19,7 +26,7 @@ const App = () => (
       <TooltipProvider>
         <MusicProvider>
           <Toaster />
-          <Sonner />
+          <Sonner position="top-right" expand={false} />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />

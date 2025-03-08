@@ -50,6 +50,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [recentlyPlayed, setRecentlyPlayed] = useState<Song[]>([]);
 
   // Load favorites from localStorage on initialization
   useEffect(() => {
@@ -71,6 +72,26 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.error('Failed to parse volume from localStorage', error);
       }
     }
+    
+    // Load queue from localStorage
+    const savedQueue = localStorage.getItem('music-queue');
+    if (savedQueue) {
+      try {
+        setQueue(JSON.parse(savedQueue));
+      } catch (error) {
+        console.error('Failed to parse queue from localStorage', error);
+      }
+    }
+    
+    // Load recently played from localStorage
+    const savedRecentlyPlayed = localStorage.getItem('music-recently-played');
+    if (savedRecentlyPlayed) {
+      try {
+        setRecentlyPlayed(JSON.parse(savedRecentlyPlayed));
+      } catch (error) {
+        console.error('Failed to parse recently played from localStorage', error);
+      }
+    }
   }, []);
 
   // Save favorites to localStorage when changed
@@ -82,10 +103,30 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem('music-volume', JSON.stringify(volume));
   }, [volume]);
+  
+  // Save queue to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('music-queue', JSON.stringify(queue));
+  }, [queue]);
+  
+  // Save recently played to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('music-recently-played', JSON.stringify(recentlyPlayed));
+  }, [recentlyPlayed]);
 
   const playSong = (song: Song) => {
+    // Add current song to recently played if it exists
+    if (currentSong) {
+      const updatedRecentlyPlayed = [
+        currentSong,
+        ...recentlyPlayed.filter(s => s.id !== currentSong.id).slice(0, 19)
+      ];
+      setRecentlyPlayed(updatedRecentlyPlayed);
+    }
+    
     setCurrentSong(song);
     setIsPlaying(true);
+    setCurrentTime(0); // Reset current time
   };
 
   const pauseSong = () => {
@@ -120,6 +161,15 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const nextSong = () => {
     if (queue.length > 0) {
+      // Add current song to recently played if it exists
+      if (currentSong) {
+        const updatedRecentlyPlayed = [
+          currentSong,
+          ...recentlyPlayed.filter(s => s.id !== currentSong.id).slice(0, 19)
+        ];
+        setRecentlyPlayed(updatedRecentlyPlayed);
+      }
+      
       const nextSong = queue[0];
       setCurrentSong(nextSong);
       setQueue(queue.slice(1));
@@ -129,9 +179,20 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const prevSong = () => {
-    // We don't have previous song history yet, so this is a placeholder
-    // In a real app, we would keep track of played songs
-    setIsPlaying(true);
+    if (recentlyPlayed.length > 0) {
+      const prevSong = recentlyPlayed[0];
+      
+      // Move current song to queue if there is one
+      if (currentSong) {
+        setQueue([currentSong, ...queue]);
+      }
+      
+      // Set the previous song as current and remove it from recently played
+      setCurrentSong(prevSong);
+      setRecentlyPlayed(recentlyPlayed.slice(1));
+      setIsPlaying(true);
+      setCurrentTime(0);
+    }
   };
 
   return (
