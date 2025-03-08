@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
@@ -19,7 +18,9 @@ const Index = () => {
     // Load some default content on page load
     const loadInitialContent = async () => {
       const results = await search('popular music');
-      setSearchResults(results);
+      if (results) {
+        setSearchResults(results);
+      }
     };
     
     if (searchResults.length === 0) {

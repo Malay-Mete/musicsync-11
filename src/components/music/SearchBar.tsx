@@ -34,7 +34,9 @@ const SearchBar = () => {
       setIsSearching(true);
       
       const results = await search(inputValue);
-      setSearchResults(results);
+      if (results) {
+        setSearchResults(results);
+      }
       setShowDropdown(false);
       
       navigate('/search');

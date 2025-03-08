@@ -113,7 +113,7 @@ const MusicPlayer = () => {
   const initializePlayer = () => {
     if (!iframeRef.current) return;
     
-    playerRef.current = new YT.Player(iframeRef.current, {
+    playerRef.current = new window.YT.Player(iframeRef.current, {
       events: {
         onReady: onPlayerReady,
         onStateChange: onPlayerStateChange,
@@ -126,7 +126,7 @@ const MusicPlayer = () => {
   };
   
   const onPlayerStateChange = (event: YT.OnStateChangeEvent) => {
-    if (event.data === YT.PlayerState.ENDED) {
+    if (event.data === window.YT.PlayerState.ENDED) {
       nextSong();
     }
   };

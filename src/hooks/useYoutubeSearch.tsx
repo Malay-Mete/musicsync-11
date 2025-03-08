@@ -32,10 +32,10 @@ export const useYoutubeSearch = () => {
     getFromStorage(STORAGE_KEYS.SEARCH_HISTORY, [])
   );
 
-  const search = useCallback(async (query: string) => {
+  const search = useCallback(async (query: string): Promise<Song[] | undefined> => {
     if (!query.trim()) {
       setResults([]);
-      return;
+      return [];
     }
 
     setIsLoading(true);
@@ -53,10 +53,13 @@ export const useYoutubeSearch = () => {
       ];
       setSearchHistory(newHistory);
       saveToStorage(STORAGE_KEYS.SEARCH_HISTORY, newHistory);
+      
+      return data;
     } catch (err) {
       console.error('Search error:', err);
       setError('Failed to search. Please try again.');
       setResults([]);
+      return [];
     } finally {
       setIsLoading(false);
     }
