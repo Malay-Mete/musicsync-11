@@ -10,8 +10,7 @@ import {
   VolumeX,
   Heart,
   Maximize2,
-  Minimize2,
-  List
+  Minimize2
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 
@@ -36,6 +35,7 @@ const MusicPlayer = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(volume);
+  const [playerReady, setPlayerReady] = useState(false);
   
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const playerRef = useRef<YT.Player | null>(null);
@@ -51,8 +51,9 @@ const MusicPlayer = () => {
       const firstScriptTag = document.getElementsByTagName('script')[0];
       firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
       
+      // Define the callback function that YouTube API will call when ready
       window.onYouTubeIframeAPIReady = initializePlayer;
-    } else {
+    } else if (!playerReady) {
       initializePlayer();
     }
     
@@ -64,7 +65,7 @@ const MusicPlayer = () => {
   }, []);
   
   useEffect(() => {
-    if (currentSong && playerRef.current) {
+    if (currentSong && playerRef.current && playerReady) {
       playerRef.current.loadVideoById(currentSong.id);
       
       if (isPlaying) {
@@ -73,10 +74,10 @@ const MusicPlayer = () => {
         playerRef.current.pauseVideo();
       }
     }
-  }, [currentSong]);
+  }, [currentSong, playerReady]);
   
   useEffect(() => {
-    if (playerRef.current) {
+    if (playerRef.current && playerReady) {
       if (isPlaying) {
         playerRef.current.playVideo();
         
@@ -87,11 +88,11 @@ const MusicPlayer = () => {
         
         progressInterval.current = window.setInterval(() => {
           if (playerRef.current) {
-            const currentTime = playerRef.current.getCurrentTime();
-            const duration = playerRef.current.getDuration();
+            const currentTime = playerRef.current.getCurrentTime() || 0;
+            const duration = playerRef.current.getDuration() || 0;
             setCurrentTime(currentTime);
             setDuration(duration);
-            setProgress((currentTime / duration) * 100);
+            setProgress((currentTime / duration) * 100 || 0);
           }
         }, 1000);
       } else {
@@ -102,43 +103,58 @@ const MusicPlayer = () => {
         }
       }
     }
-  }, [isPlaying]);
+  }, [isPlaying, playerReady]);
   
   useEffect(() => {
-    if (playerRef.current) {
+    if (playerRef.current && playerReady) {
       playerRef.current.setVolume(volume);
     }
-  }, [volume]);
+  }, [volume, playerReady]);
   
   const initializePlayer = () => {
-    if (!iframeRef.current) return;
+    if (!iframeRef.current || !window.YT) return;
     
-    playerRef.current = new window.YT.Player(iframeRef.current, {
-      events: {
-        onReady: onPlayerReady,
-        onStateChange: onPlayerStateChange,
-      },
-    });
-  };
-  
-  const onPlayerReady = (event: YT.PlayerEvent) => {
-    event.target.setVolume(volume);
-  };
-  
-  const onPlayerStateChange = (event: YT.OnStateChangeEvent) => {
-    if (event.data === window.YT.PlayerState.ENDED) {
-      nextSong();
+    try {
+      playerRef.current = new window.YT.Player(iframeRef.current, {
+        events: {
+          onReady: (event) => {
+            setPlayerReady(true);
+            event.target.setVolume(volume);
+            
+            // If there's a current song, load it
+            if (currentSong) {
+              event.target.loadVideoById(currentSong.id);
+              if (isPlaying) {
+                event.target.playVideo();
+              } else {
+                event.target.pauseVideo();
+              }
+            }
+          },
+          onStateChange: (event) => {
+            if (event.data === window.YT.PlayerState.ENDED) {
+              nextSong();
+            }
+          },
+          onError: (event) => {
+            console.error("YouTube player error:", event);
+          }
+        },
+      });
+    } catch (error) {
+      console.error("Error initializing YouTube player:", error);
     }
   };
   
   const formatTime = (seconds: number) => {
+    if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
   
   const handleProgressChange = (value: number[]) => {
-    if (playerRef.current && duration) {
+    if (playerRef.current && duration && playerReady) {
       const newTime = (value[0] / 100) * duration;
       playerRef.current.seekTo(newTime, true);
       setProgress(value[0]);
@@ -187,8 +203,9 @@ const MusicPlayer = () => {
       <div className="hidden">
         <iframe 
           ref={iframeRef}
-          src="https://www.youtube.com/embed/?enablejsapi=1&controls=0&showinfo=0&fs=0&modestbranding=1"
-          allow="autoplay"
+          src={`https://www.youtube.com/embed/?enablejsapi=1&controls=0&showinfo=0&fs=0&modestbranding=1&origin=${window.location.origin}`}
+          allow="autoplay; encrypted-media"
+          title="YouTube music player"
         ></iframe>
       </div>
       
@@ -200,7 +217,7 @@ const MusicPlayer = () => {
               <img 
                 src={currentSong.thumbnail} 
                 alt={currentSong.title} 
-                className="w-full h-full object-cover animate-spin-slow"
+                className="w-full h-full object-cover"
               />
             </div>
             
@@ -236,7 +253,7 @@ const MusicPlayer = () => {
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={toggleMute}
-                      className="music-button hover:bg-gray-100"
+                      className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                       aria-label={isMuted ? "Unmute" : "Mute"}
                     >
                       {isMuted || volume === 0 ? (
@@ -261,7 +278,7 @@ const MusicPlayer = () => {
                   <div className="flex items-center space-x-4">
                     <button
                       onClick={prevSong}
-                      className="music-button hover:bg-gray-100"
+                      className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                       aria-label="Previous song"
                     >
                       <SkipBack size={22} className="text-gray-600" />
@@ -269,19 +286,19 @@ const MusicPlayer = () => {
                     
                     <button
                       onClick={togglePlay}
-                      className="music-button w-12 h-12 bg-music-accent hover:bg-music-highlight text-white rounded-full"
+                      className="p-3 w-12 h-12 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors"
                       aria-label={isPlaying ? "Pause" : "Play"}
                     >
                       {isPlaying ? (
                         <Pause size={24} />
                       ) : (
-                        <Play size={24} className="ml-1" fill="currentColor" />
+                        <Play size={24} className="ml-1" />
                       )}
                     </button>
                     
                     <button
                       onClick={nextSong}
-                      className="music-button hover:bg-gray-100"
+                      className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                       aria-label="Next song"
                       disabled={queue.length === 0}
                     >
@@ -292,7 +309,7 @@ const MusicPlayer = () => {
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={handleToggleFavorite}
-                      className="music-button hover:bg-gray-100"
+                      className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                       aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                     >
                       <Heart 
@@ -303,7 +320,7 @@ const MusicPlayer = () => {
                     
                     <button
                       onClick={() => setExpanded(false)}
-                      className="music-button hover:bg-gray-100"
+                      className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                       aria-label="Minimize player"
                     >
                       <Minimize2 size={20} className="text-gray-600" />
@@ -336,10 +353,10 @@ const MusicPlayer = () => {
             </p>
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center space-x-3">
             <button
               onClick={prevSong}
-              className="music-button hover:bg-gray-100"
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               aria-label="Previous song"
             >
               <SkipBack size={20} className="text-gray-600" />
@@ -347,19 +364,19 @@ const MusicPlayer = () => {
             
             <button
               onClick={togglePlay}
-              className="music-button w-10 h-10 bg-music-accent hover:bg-music-highlight text-white rounded-full"
+              className="p-2 w-10 h-10 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors"
               aria-label={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? (
                 <Pause size={18} />
               ) : (
-                <Play size={18} className="ml-0.5" fill="currentColor" />
+                <Play size={18} className="ml-0.5" />
               )}
             </button>
             
             <button
               onClick={nextSong}
-              className="music-button hover:bg-gray-100"
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               aria-label="Next song"
               disabled={queue.length === 0}
             >
@@ -370,7 +387,7 @@ const MusicPlayer = () => {
           <div className="hidden md:flex ml-4 items-center space-x-3">
             <button
               onClick={handleToggleFavorite}
-              className="music-button hover:bg-gray-100"
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
             >
               <Heart 
@@ -382,7 +399,7 @@ const MusicPlayer = () => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={toggleMute}
-                className="music-button hover:bg-gray-100"
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                 aria-label={isMuted ? "Unmute" : "Mute"}
               >
                 {isMuted || volume === 0 ? (
@@ -406,7 +423,7 @@ const MusicPlayer = () => {
             
             <button
               onClick={() => setExpanded(true)}
-              className="music-button hover:bg-gray-100"
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               aria-label="Expand player"
             >
               <Maximize2 size={18} className="text-gray-600" />
@@ -418,7 +435,7 @@ const MusicPlayer = () => {
       {/* Progress bar - always visible */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200">
         <div 
-          className="h-full bg-music-accent transition-all duration-150 ease-linear"
+          className="h-full bg-blue-500 transition-all duration-150 ease-linear"
           style={{ width: `${progress}%` }}
         ></div>
       </div>
