@@ -8,20 +8,37 @@ interface SearchHistoryItem {
   timestamp: number;
 }
 
-// Mock function for YouTube search since we don't have a real API key
-const mockYouTubeSearch = async (query: string): Promise<Song[]> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Generate mock results based on query
-  return Array(10).fill(null).map((_, index) => ({
-    id: `mock-${query}-${index}`,
-    title: `${query} - Song ${index + 1}`,
-    thumbnail: `https://picsum.photos/seed/${query}${index}/300/200`,
-    channelTitle: `Channel ${index + 1}`,
-    publishedAt: new Date().toISOString(),
-    duration: `${Math.floor(Math.random() * 5) + 2}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`
-  }));
+// YouTube API key
+const YOUTUBE_API_KEY = 'AIzaSyDQ9Qpe0625tXcKj3WakqJQLdpIQruN3aI';
+
+// Real YouTube search function that uses the YouTube Data API
+const youTubeSearch = async (query: string): Promise<Song[]> => {
+  try {
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&q=${encodeURIComponent(
+        query
+      )}&type=video&key=${YOUTUBE_API_KEY}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`YouTube API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Transform the YouTube API response into our Song format
+    return data.items.map((item: any) => ({
+      id: item.id.videoId,
+      title: item.snippet.title,
+      thumbnail: item.snippet.thumbnails.high.url || item.snippet.thumbnails.default.url,
+      channelTitle: item.snippet.channelTitle,
+      publishedAt: item.snippet.publishedAt,
+      duration: '0:00' // We'll need a separate API call to get durations
+    }));
+  } catch (error) {
+    console.error('YouTube API error:', error);
+    throw error;
+  }
 };
 
 export const useYoutubeSearch = () => {
@@ -42,8 +59,8 @@ export const useYoutubeSearch = () => {
     setError(null);
 
     try {
-      // In a real implementation, we would call the YouTube API here
-      const data = await mockYouTubeSearch(query);
+      // Call the real YouTube API instead of the mock function
+      const data = await youTubeSearch(query);
       setResults(data);
       
       // Update search history
