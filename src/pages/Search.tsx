@@ -15,14 +15,14 @@ const Search = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="min-h-screen bg-music-background">
+    <div className="min-h-screen bg-background dark:bg-gray-900 text-foreground dark:text-gray-100">
       {!isMobile && <Navbar />}
       {!isMobile && <Sidebar />}
       
       <main className={isMobile ? "pt-4 pb-24 px-4" : "pt-24 pb-24 px-4 md:px-8 lg:pl-72"}>
         <div className="max-w-7xl mx-auto">
           {isMobile ? (
-            <div className="sticky top-0 z-10 mb-4 bg-black pt-2 pb-4 px-2">
+            <div className="sticky top-0 z-10 mb-4 bg-black dark:bg-gray-900 pt-2 pb-4 px-2">
               <div className="flex items-center gap-2 mb-6">
                 <button 
                   onClick={() => navigate('/')}
@@ -44,20 +44,20 @@ const Search = () => {
               
               {searchQuery ? (
                 <div className="mb-8">
-                  <span className="text-sm text-gray-500">Search results for</span>
-                  <h1 className="text-3xl font-bold text-gray-900 mt-1">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Search results for</span>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                     "{searchQuery}"
                   </h1>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {searchResults.length} results found
                   </p>
                 </div>
               ) : (
                 <div className="mb-8">
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                     Search Results
                   </h1>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Explore music from our library
                   </p>
                 </div>
