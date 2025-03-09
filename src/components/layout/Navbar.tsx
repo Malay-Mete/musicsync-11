@@ -5,12 +5,14 @@ import { Search, Heart, Home, Music, Menu, X } from 'lucide-react';
 import { useMusic } from '@/context/MusicContext';
 import SearchBar from '@/components/music/SearchBar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Navbar = () => {
   const location = useLocation();
   const { searchQuery, setSearchQuery } = useMusic();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -78,57 +80,63 @@ const Navbar = () => {
         
         <div className="md:hidden flex items-center space-x-2 z-20">
           <ThemeToggle />
-          <button 
-            className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
-            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-            onClick={toggleMobileMenu}
-          >
-            {isMobileMenuOpen ? (
-              <X size={20} className="text-gray-600 dark:text-gray-300" />
-            ) : (
-              <Menu size={20} className="text-gray-600 dark:text-gray-300" />
-            )}
-          </button>
+          {!isMobile && (
+            <button 
+              className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              onClick={toggleMobileMenu}
+            >
+              {isMobileMenuOpen ? (
+                <X size={20} className="text-gray-600 dark:text-gray-300" />
+              ) : (
+                <Menu size={20} className="text-gray-600 dark:text-gray-300" />
+              )}
+            </button>
+          )}
         </div>
       </div>
       
-      {/* Mobile search bar */}
-      <div className="md:hidden mt-4 px-4">
-        <SearchBar />
-      </div>
+      {/* Mobile search bar - only show if not using the mobile UI */}
+      {!isMobile && (
+        <div className="md:hidden mt-4 px-4">
+          <SearchBar />
+        </div>
+      )}
       
-      {/* Mobile menu */}
-      <div 
-        className={`fixed inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md z-10 transition-transform duration-300 transform md:hidden pt-24 pb-20 px-6
-        ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
-      >
-        <nav className="flex flex-col space-y-6">
-          <Link 
-            to="/" 
-            className={`flex items-center space-x-3 text-lg font-medium p-2 rounded-lg
-              ${location.pathname === '/' ? 'text-music-accent bg-gray-100 dark:bg-gray-800' : 'text-gray-800 dark:text-gray-200'}`}
-          >
-            <Home size={24} />
-            <span>Home</span>
-          </Link>
-          <Link 
-            to="/search" 
-            className={`flex items-center space-x-3 text-lg font-medium p-2 rounded-lg
-              ${location.pathname === '/search' ? 'text-music-accent bg-gray-100 dark:bg-gray-800' : 'text-gray-800 dark:text-gray-200'}`}
-          >
-            <Search size={24} />
-            <span>Explore</span>
-          </Link>
-          <Link 
-            to="/favorites" 
-            className={`flex items-center space-x-3 text-lg font-medium p-2 rounded-lg
-              ${location.pathname === '/favorites' ? 'text-music-accent bg-gray-100 dark:bg-gray-800' : 'text-gray-800 dark:text-gray-200'}`}
-          >
-            <Heart size={24} />
-            <span>Favorites</span>
-          </Link>
-        </nav>
-      </div>
+      {/* Mobile menu - only show if not using the mobile UI */}
+      {!isMobile && (
+        <div 
+          className={`fixed inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md z-10 transition-transform duration-300 transform md:hidden pt-24 pb-20 px-6
+          ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        >
+          <nav className="flex flex-col space-y-6">
+            <Link 
+              to="/" 
+              className={`flex items-center space-x-3 text-lg font-medium p-2 rounded-lg
+                ${location.pathname === '/' ? 'text-music-accent bg-gray-100 dark:bg-gray-800' : 'text-gray-800 dark:text-gray-200'}`}
+            >
+              <Home size={24} />
+              <span>Home</span>
+            </Link>
+            <Link 
+              to="/search" 
+              className={`flex items-center space-x-3 text-lg font-medium p-2 rounded-lg
+                ${location.pathname === '/search' ? 'text-music-accent bg-gray-100 dark:bg-gray-800' : 'text-gray-800 dark:text-gray-200'}`}
+            >
+              <Search size={24} />
+              <span>Explore</span>
+            </Link>
+            <Link 
+              to="/favorites" 
+              className={`flex items-center space-x-3 text-lg font-medium p-2 rounded-lg
+                ${location.pathname === '/favorites' ? 'text-music-accent bg-gray-100 dark:bg-gray-800' : 'text-gray-800 dark:text-gray-200'}`}
+            >
+              <Heart size={24} />
+              <span>Favorites</span>
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   );
 };

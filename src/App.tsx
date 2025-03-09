@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Search from "./pages/Search";
 import Favorites from "./pages/Favorites";
 import NotFound from "./pages/NotFound";
+import MobileScreen from "./components/mobile/MobileScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/favorites" element={<Favorites />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <MobileScreen />
           </BrowserRouter>
         </MusicProvider>
       </TooltipProvider>
