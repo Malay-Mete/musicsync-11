@@ -2,12 +2,13 @@
 import React from 'react';
 import { useMusic } from '@/context/MusicContext';
 import { Home, Search, Library, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const MobileScreen = () => {
   const { currentSong, isPlaying, playSong, pauseSong, nextSong, prevSong } = useMusic();
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   
   if (!isMobile) return null;
@@ -18,6 +19,11 @@ const MobileScreen = () => {
     } else if (currentSong) {
       playSong(currentSong);
     }
+  };
+
+  const handleNavigation = (path: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate(path);
   };
 
   return (
@@ -70,33 +76,33 @@ const MobileScreen = () => {
       
       {/* Navigation tabs */}
       <div className="flex justify-around items-center h-12 bg-black/95">
-        <Link 
-          to="/" 
+        <button 
+          onClick={handleNavigation('/')} 
           className={`flex flex-col items-center justify-center w-1/3 h-full ${
             location.pathname === '/' ? 'text-white' : 'text-gray-400'
           }`}
         >
           <Home size={20} />
           <span className="text-xs mt-0.5">Home</span>
-        </Link>
-        <Link 
-          to="/search" 
+        </button>
+        <button 
+          onClick={handleNavigation('/search')} 
           className={`flex flex-col items-center justify-center w-1/3 h-full ${
             location.pathname === '/search' ? 'text-white' : 'text-gray-400'
           }`}
         >
           <Search size={20} />
           <span className="text-xs mt-0.5">Search</span>
-        </Link>
-        <Link 
-          to="/favorites" 
+        </button>
+        <button 
+          onClick={handleNavigation('/favorites')} 
           className={`flex flex-col items-center justify-center w-1/3 h-full ${
             location.pathname === '/favorites' ? 'text-white' : 'text-gray-400'
           }`}
         >
           <Library size={20} />
           <span className="text-xs mt-0.5">Library</span>
-        </Link>
+        </button>
       </div>
     </div>
   );
