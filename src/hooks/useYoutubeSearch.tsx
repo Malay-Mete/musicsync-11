@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Song } from '@/context/MusicContext';
 import { getFromStorage, saveToStorage, STORAGE_KEYS } from '@/utils/localStorage';
@@ -6,6 +5,8 @@ import { getFromStorage, saveToStorage, STORAGE_KEYS } from '@/utils/localStorag
 interface SearchHistoryItem {
   query: string;
   timestamp: number;
+  type?: 'artist' | 'album' | 'song';
+  thumbnail?: string;
 }
 
 // YouTube API key
@@ -63,9 +64,32 @@ export const useYoutubeSearch = () => {
       const data = await youTubeSearch(query);
       setResults(data);
       
+      // Determine if this is likely an artist, album, or song query
+      let type: 'artist' | 'album' | 'song' | undefined;
+      let thumbnail: string | undefined;
+      
+      if (data.length > 0) {
+        // Check if query exactly matches a channel title (likely an artist)
+        if (data.some(song => song.channelTitle.toLowerCase() === query.toLowerCase())) {
+          type = 'artist';
+          thumbnail = data.find(song => song.channelTitle.toLowerCase() === query.toLowerCase())?.thumbnail;
+        } 
+        // If query contains "album" or multiple songs by same artist, likely an album
+        else if (query.toLowerCase().includes('album') || 
+                (new Set(data.slice(0, 5).map(s => s.channelTitle))).size <= 2) {
+          type = 'album';
+          thumbnail = data[0].thumbnail;
+        } 
+        // Otherwise it's probably a song
+        else {
+          type = 'song';
+          thumbnail = data[0].thumbnail;
+        }
+      }
+      
       // Update search history
       const newHistory = [
-        { query, timestamp: Date.now() },
+        { query, timestamp: Date.now(), type, thumbnail },
         ...searchHistory.filter(item => item.query !== query).slice(0, 9)
       ];
       setSearchHistory(newHistory);

@@ -1,10 +1,11 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, X, Music, Clock } from 'lucide-react';
+import { Search, X, Music, Clock, User, Disc, FileMusic } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMusic } from '@/context/MusicContext';
 import { useYoutubeSearch } from '@/hooks/useYoutubeSearch';
 import { getFromStorage, STORAGE_KEYS } from '@/utils/localStorage';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const SearchBar = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const SearchBar = () => {
   const [inputValue, setInputValue] = useState(searchQuery);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
   
   // Handle clicks outside of the search component
   useEffect(() => {
@@ -56,25 +58,49 @@ const SearchBar = () => {
     setShowDropdown(false);
   };
 
+  const getIconForHistoryItem = (item: any) => {
+    const types: Record<string, any> = {
+      'artist': <User size={24} className="text-gray-400" />,
+      'album': <Disc size={24} className="text-gray-400" />,
+      'song': <FileMusic size={24} className="text-gray-400" />
+    };
+    
+    return types[item.type] || <Clock size={24} className="text-gray-400" />;
+  };
+
   return (
     <div ref={searchRef} className="relative w-full">
       <form onSubmit={handleSubmit} className="relative">
-        <div className="relative rounded-full overflow-hidden shadow-sm border border-gray-200 hover:border-gray-300 transition-colors duration-200 bg-white/80 backdrop-blur-sm">
+        <div className={`relative rounded-full overflow-hidden shadow-sm border ${
+          isMobile ? 'border-gray-700 bg-gray-800/90' : 'border-gray-200 hover:border-gray-300 bg-white/80'
+        } backdrop-blur-sm transition-colors duration-200`}>
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={18} className="text-gray-400" />
+            <Search size={18} className={isMobile ? "text-gray-400" : "text-gray-400"} />
           </div>
           
           <input
             type="text"
-            placeholder="Search for songs, artists..."
+            placeholder="Search"
             value={inputValue}
             onChange={(e) => {
               setInputValue(e.target.value);
               setShowDropdown(true);
             }}
             onFocus={() => setShowDropdown(true)}
-            className="block w-full py-2 pl-10 pr-10 border-0 bg-transparent focus:ring-0 text-sm text-gray-900 outline-none"
+            className={`block w-full py-2 pl-10 pr-10 border-0 bg-transparent focus:ring-0 text-sm ${
+              isMobile ? 'text-white placeholder-gray-400' : 'text-gray-900'
+            } outline-none`}
           />
+          
+          {isMobile && !inputValue && (
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              <span className="text-sm font-medium text-white">Cancel</span>
+            </button>
+          )}
           
           {inputValue && (
             <button
@@ -82,7 +108,7 @@ const SearchBar = () => {
               onClick={handleClear}
               className="absolute inset-y-0 right-0 pr-3 flex items-center"
             >
-              <X size={18} className="text-gray-400 hover:text-gray-600" />
+              <X size={18} className={isMobile ? "text-gray-400" : "text-gray-400 hover:text-gray-600"} />
             </button>
           )}
         </div>
@@ -95,36 +121,51 @@ const SearchBar = () => {
       </form>
       
       {showDropdown && (
-        <div className="absolute mt-2 w-full bg-white rounded-lg shadow-lg overflow-hidden border border-gray-100 animate-scale-in z-10">
+        <div className={`absolute mt-2 w-full ${
+          isMobile ? 'bg-black text-white' : 'bg-white'
+        } rounded-lg shadow-lg overflow-hidden border ${
+          isMobile ? 'border-gray-800' : 'border-gray-100'
+        } animate-scale-in z-10 ${
+          isMobile ? 'left-0 right-0' : ''
+        }`}>
           {searchHistory.length > 0 ? (
-            <>
-              <div className="p-2 flex items-center justify-between border-b border-gray-100">
-                <span className="text-xs font-medium text-gray-500">Recent searches</span>
+            <div className="max-h-60 overflow-y-auto">
+              {searchHistory.map((item, index) => (
                 <button
-                  onClick={clearHistory}
-                  className="text-xs text-gray-500 hover:text-gray-700"
+                  key={index}
+                  onClick={() => handleItemClick(item.query)}
+                  className={`w-full text-left px-4 py-3 ${
+                    isMobile ? 'hover:bg-gray-900 border-b border-gray-800' : 'hover:bg-gray-50'
+                  } flex items-center`}
                 >
-                  Clear all
+                  <div className="h-10 w-10 rounded-md overflow-hidden bg-gray-700 flex items-center justify-center mr-3">
+                    {item.thumbnail ? (
+                      <img 
+                        src={item.thumbnail} 
+                        alt={item.query} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      getIconForHistoryItem(item)
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`text-sm font-medium ${isMobile ? 'text-white' : 'text-gray-900'}`}>
+                      {item.query}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {item.type || 'Search'}
+                    </span>
+                  </div>
                 </button>
-              </div>
-              
-              <div className="max-h-60 overflow-y-auto">
-                {searchHistory.map((item, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleItemClick(item.query)}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center space-x-2"
-                  >
-                    <Clock size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-700">{item.query}</span>
-                  </button>
-                ))}
-              </div>
-            </>
+              ))}
+            </div>
           ) : (
             <div className="py-8 px-4 text-center">
-              <Music size={24} className="mx-auto text-gray-300 mb-2" />
-              <p className="text-sm text-gray-500">Start searching for music</p>
+              <Music size={24} className={`mx-auto ${isMobile ? 'text-gray-700' : 'text-gray-300'} mb-2`} />
+              <p className={`text-sm ${isMobile ? 'text-gray-500' : 'text-gray-500'}`}>
+                Start searching for music
+              </p>
             </div>
           )}
         </div>
