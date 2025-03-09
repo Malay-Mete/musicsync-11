@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface Song {
@@ -20,6 +19,7 @@ interface MusicContextType {
   searchQuery: string;
   isSearching: boolean;
   currentTime: number;
+  recentlyPlayed: Song[];
   setCurrentSong: (song: Song | null) => void;
   playSong: (song: Song) => void;
   pauseSong: () => void;
@@ -52,7 +52,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [currentTime, setCurrentTime] = useState(0);
   const [recentlyPlayed, setRecentlyPlayed] = useState<Song[]>([]);
 
-  // Load favorites from localStorage on initialization
   useEffect(() => {
     const savedFavorites = localStorage.getItem('music-favorites');
     if (savedFavorites) {
@@ -63,7 +62,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     
-    // Load volume from localStorage
     const savedVolume = localStorage.getItem('music-volume');
     if (savedVolume) {
       try {
@@ -73,7 +71,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     
-    // Load queue from localStorage
     const savedQueue = localStorage.getItem('music-queue');
     if (savedQueue) {
       try {
@@ -83,7 +80,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     
-    // Load recently played from localStorage
     const savedRecentlyPlayed = localStorage.getItem('music-recently-played');
     if (savedRecentlyPlayed) {
       try {
@@ -94,28 +90,23 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  // Save favorites to localStorage when changed
   useEffect(() => {
     localStorage.setItem('music-favorites', JSON.stringify(favorites));
   }, [favorites]);
   
-  // Save volume to localStorage when changed
   useEffect(() => {
     localStorage.setItem('music-volume', JSON.stringify(volume));
   }, [volume]);
   
-  // Save queue to localStorage when changed
   useEffect(() => {
     localStorage.setItem('music-queue', JSON.stringify(queue));
   }, [queue]);
   
-  // Save recently played to localStorage when changed
   useEffect(() => {
     localStorage.setItem('music-recently-played', JSON.stringify(recentlyPlayed));
   }, [recentlyPlayed]);
 
   const playSong = (song: Song) => {
-    // Add current song to recently played if it exists
     if (currentSong) {
       const updatedRecentlyPlayed = [
         currentSong,
@@ -126,7 +117,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     setCurrentSong(song);
     setIsPlaying(true);
-    setCurrentTime(0); // Reset current time
+    setCurrentTime(0);
   };
 
   const pauseSong = () => {
@@ -161,7 +152,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const nextSong = () => {
     if (queue.length > 0) {
-      // Add current song to recently played if it exists
       if (currentSong) {
         const updatedRecentlyPlayed = [
           currentSong,
@@ -182,12 +172,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (recentlyPlayed.length > 0) {
       const prevSong = recentlyPlayed[0];
       
-      // Move current song to queue if there is one
       if (currentSong) {
         setQueue([currentSong, ...queue]);
       }
       
-      // Set the previous song as current and remove it from recently played
       setCurrentSong(prevSong);
       setRecentlyPlayed(recentlyPlayed.slice(1));
       setIsPlaying(true);
@@ -207,6 +195,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         searchQuery,
         isSearching,
         currentTime,
+        recentlyPlayed,
         setCurrentSong,
         playSong,
         pauseSong,

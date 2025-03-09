@@ -2,7 +2,7 @@
 import React from 'react';
 import { useMusic } from '@/context/MusicContext';
 import { Home, Search, Library, Play, Pause, SkipBack, SkipForward } from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const MobileScreen = () => {
@@ -21,8 +21,7 @@ const MobileScreen = () => {
     }
   };
 
-  const handleNavigation = (path: string) => (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleNavigation = (path: string) => {
     navigate(path);
   };
 
@@ -77,7 +76,7 @@ const MobileScreen = () => {
       {/* Navigation tabs */}
       <div className="flex justify-around items-center h-12 bg-black/95">
         <button 
-          onClick={handleNavigation('/')} 
+          onClick={() => handleNavigation('/')} 
           className={`flex flex-col items-center justify-center w-1/3 h-full ${
             location.pathname === '/' ? 'text-white' : 'text-gray-400'
           }`}
@@ -86,7 +85,7 @@ const MobileScreen = () => {
           <span className="text-xs mt-0.5">Home</span>
         </button>
         <button 
-          onClick={handleNavigation('/search')} 
+          onClick={() => handleNavigation('/search')} 
           className={`flex flex-col items-center justify-center w-1/3 h-full ${
             location.pathname === '/search' ? 'text-white' : 'text-gray-400'
           }`}
@@ -95,7 +94,7 @@ const MobileScreen = () => {
           <span className="text-xs mt-0.5">Search</span>
         </button>
         <button 
-          onClick={handleNavigation('/favorites')} 
+          onClick={() => handleNavigation('/favorites')} 
           className={`flex flex-col items-center justify-center w-1/3 h-full ${
             location.pathname === '/favorites' ? 'text-white' : 'text-gray-400'
           }`}

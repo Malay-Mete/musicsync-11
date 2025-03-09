@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
 import MusicPlayer from '@/components/music/MusicPlayer';
@@ -8,14 +8,16 @@ import { useMusic } from '@/context/MusicContext';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useYoutubeSearch } from '@/hooks/useYoutubeSearch';
+import { useAutoRecommendations } from '@/utils/openAiRecommendations';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { searchResults, setSearchResults, favorites } = useMusic();
+  const { searchResults, setSearchResults, favorites, currentSong, recentlyPlayed } = useMusic();
   const { search } = useYoutubeSearch();
+  const { refreshRecommendations } = useAutoRecommendations();
+  const [recommendationTitle, setRecommendationTitle] = useState("Discover Music");
   
   useEffect(() => {
-    // Load some default content on page load
     const loadInitialContent = async () => {
       const results = await search('popular music');
       if (results) {
@@ -27,6 +29,29 @@ const Index = () => {
       loadInitialContent();
     }
   }, []);
+  
+  useEffect(() => {
+    const updateRecommendations = async () => {
+      const results = await refreshRecommendations(currentSong, recentlyPlayed, favorites);
+      if (results && results.length > 0) {
+        setSearchResults(results);
+        
+        if (currentSong) {
+          setRecommendationTitle(`Because you listened to ${currentSong.title}`);
+        } else if (recentlyPlayed.length > 0) {
+          setRecommendationTitle('Based on your recently played');
+        } else {
+          setRecommendationTitle('Recommended for you');
+        }
+      }
+    };
+    
+    updateRecommendations();
+    
+    const intervalId = setInterval(updateRecommendations, 2 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [currentSong, recentlyPlayed, favorites]);
   
   return (
     <div className="min-h-screen bg-music-background">
@@ -71,8 +96,8 @@ const Index = () => {
 
           <section className="mb-12">
             <SongList 
-              title="Discover Music" 
-              description="Popular songs for you to explore"
+              title={recommendationTitle} 
+              description="Personalized music suggestions powered by AI"
             />
           </section>
 
